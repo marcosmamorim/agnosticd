@@ -12,33 +12,51 @@
       msg:
       - Entering the odf-dr-binder post_software
 
+#####################################
+# Testing ssh keys
+#####################################
+  - name: Store aws_hub_a private key
+    copy:
+      content: "{{ aws_hub_a_provision_data.ssh_provision_key }}\n"
+      dest: "{{ output_dir }}/aws_hub_a.pem"
+      mode: 0400
+
+  - name: Store aws_primary_a private key
+    copy:
+      content: "{{ aws_primary_a_provision_data.ssh_provision_key}}\n"
+      dest: "{{ output_dir }}/aws_primary_a.pem"
+      mode: 0400
+
+  - name: Store aws_secondry_a private key
+    copy:
+      content: "{{ aws_secondary_a_provision_data.ssh_provision_key }}\n"
+      dest: "{{ output_dir }}/aws_prod_cluster.pem"
+      mode: 0400
+
   # In-Memory inventory
   - name: add aws-hub to inventory
     ansible.builtin.add_host:
       name: "{{ aws_hub_a_provision_data.bastion_public_hostname }}"
       groups: ohc_hub
       ansible_connection: ssh
-      ansible_ssh_private_key_file: "~/.ssh/opentlc_admin_backdoor.pem"
+      ansible_ssh_private_key_file: "{{ output_dir }}/aws_hub_a.pem"
       ansible_user: "ec2-user"
-      remote_user: "ec2-user"
 
   - name: add aws-primary to inventory
     ansible.builtin.add_host:
       name: "{{ aws_primary_a_provision_data.bastion_public_hostname }}"
       groups: ohc_aws_primary_a
       ansible_connection: ssh
-      ansible_ssh_private_key_file: "~/.ssh/opentlc_admin_backdoor.pem"
+      ansible_ssh_private_key_file: "{{ output_dir }}/aws_primary_a.pem"
       ansible_user: "ec2-user"
-      remote_user: "ec2-user"
 
   - name: add aws-secondary to inventory
     ansible.builtin.add_host:
       name: "{{ aws_secondary_a_provision_data.bastion_public_hostname }}"
       groups: ohc_aws_secondary_a
       ansible_connection: ssh
-      ansible_ssh_private_key_file: "~/.ssh/opentlc_admin_backdoor.pem"
+      ansible_ssh_private_key_file: "{{ output_dir }}/aws_prod_cluster.pem"
       ansible_user: "ec2-user"
-      remote_user: "ec2-user"
 
  # Loggin into Cluster's bastion
   - name: Logging into Hub
@@ -294,37 +312,85 @@
       state: present
       definition: "{{ lookup('template', './templates/set_oauth_token_age.yml.j2' ) | from_yaml }}"
 
-  - name: Print Primary info
+  - name: Print User info
     agnosticd_user_info:
       data:
+        # Start bookbag info
+        hub_openshift_api_server_url: >-
+          "{{ aws_hub_a_provision_data.openshift_api_server_url }}"
+        hub_openshift_cluster_console_url: >-
+          "{{ aws_hub_a_provision_data.openshift_cluster_console_url }}"
+        hub_openshift_cluster_admin_username: >-
+          "{{ aws_hub_a_provision_data.openshift_cluster_admin_username }}"
+        hub_openshift_cluster_admin_password: >-
+          "{{ aws_hub_a_provision_data.openshift_cluster_admin_password }}"
+        hub_gitea_console_url: "{{ aws_hub_a_provision_data.gitea_console_url }}"
+        hub_gitea_admin_username: "{{ aws_hub_a_provision_data.gitea_admin_username }}"
+        hub_gitea_admin_password: "{{ aws_hub_a_provision_data.gitea_admin_password }}"
+        hub_bastion_public_hostname: "{{ aws_hub_a_provision_data.bastion_public_hostname }}"
+        hub_bastion_ssh_password: "{{ aws_hub_a_provision_data.bastion_ssh_password }}"
+        hub_bastion_ssh_user_name: "{{ aws_hub_a_provision_data.bastion_ssh_user_name }}"
+        hub_ssh_command: >-
+          "{{ aws_hub_a_provision_data.bastion_ssh_user_name }}@{{ aws_hub_a_provision_data.bastion_public_hostname }}"
+
+        primary_openshift_api_server_url: >-
+          "{{ aws_primary_a_provision_data.openshift_api_server_url }}"
+        primary_openshift_cluster_console_url: >-
+          "{{ aws_primary_a_provision_data.openshift_cluster_console_url }}"
+        primary_openshift_cluster_admin_username: >-
+          "{{ aws_primary_a_provision_data.openshift_cluster_admin_username }}"
+        primary_openshift_cluster_admin_password: >-
+          "{{ aws_primary_a_provision_data.openshift_cluster_admin_password }}"
+        primary_bastion_public_hostname: >-
+          "{{ aws_primary_a_provision_data.bastion_public_hostname }}"
+        primary_bastion_ssh_password: "{{ aws_primary_a_provision_data.bastion_ssh_password }}"
+        primary_bastion_ssh_user_name: "{{ aws_primary_a_provision_data.bastion_ssh_user_name }}"
+        primary_ssh_command: >-
+          "{{ aws_primary_a_provision_data.bastion_ssh_user_name }}@{{ aws_primary_a_provision_data.bastion_public_hostname }}"
+
+        secondary_openshift_api_server_url: >-
+          "{{ aws_secondary_a_provision_data.openshift_api_server_url }}"
+        secondary_openshift_cluster_console_url: >-
+          "{{ aws_secondary_a_provision_data.openshift_cluster_console_url }}"
+        secondary_openshift_cluster_admin_username: >-
+          "{{ aws_secondary_a_provision_data.openshift_cluster_admin_username }}"
+        secondary_openshift_cluster_admin_password: >-
+          "{{ aws_secondary_a_provision_data.openshift_cluster_admin_password }}"
+        secondary_bastion_public_hostname: >-
+          "{{ aws_secondary_a_provision_data.bastion_public_hostname }}"
+        secondary_bastion_ssh_password: "{{ aws_secondary_a_provision_data.bastion_ssh_password }}"
+        secondary_bastion_ssh_user_name: "{{ aws_secondary_a_provision_data.bastion_ssh_user_name }}"
+        secondary_ssh_command: >-
+          "{{ aws_secondary_a_provision_data.bastion_ssh_user_name }}@{{ aws_secondary_a_provision_data.bastion_public_hostname }}"
+        # End of bookbag info
+
         aws_primary_a_cluster_name: 'primary'
         aws_primary_a_cluster_token: "{{ __r_aws_primary_a.k8s_auth.api_key }}"
         aws_primary_a_cluster_api_url: "{{ __r_aws_primary_a.k8s_auth.host }}"
-      msg: |
-        aws_primary_a_cluster_name: primary
-        aws_primary_a_cluster_token: {{ __r_aws_primary_a.k8s_auth.api_key }}
-        aws_primary_a_cluster_api_url: {{ __r_aws_primary_a.k8s_auth.host }}
-
-  - name: Print Secondary info
-    agnosticd_user_info:
-      data:
         aws_secondary_a_cluster_name: 'secondary'
         aws_secondary_a_cluster_token: "{{ __r_aws_secondary_a.k8s_auth.api_key }}"
         aws_secondary_a_cluster_api_url: "{{ __r_aws_secondary_a.k8s_auth.host }}"
       msg: |
+        aws_primary_a_cluster_name: primary
+        aws_primary_a_cluster_token: {{ __r_aws_primary_a.k8s_auth.api_key }}
+        aws_primary_a_cluster_api_url: {{ __r_aws_primary_a.k8s_auth.host }}
+        
         aws_secondary_a_cluster_name: secondary
         aws_secondary_a_cluster_token: {{ __r_aws_secondary_a.k8s_auth.api_key }}
         aws_secondary_a_cluster_api_url: {{ __r_aws_secondary_a.k8s_auth.host }}
 
+
   - name: ocp key and url for primary
     debug:
-      msg: "ocp primary key {{ __r_aws_primary_a.k8s_auth.api_key }}"
-      msg: "ocp primary url {{ __r_aws_primary_a.k8s_auth.host }}"
+      msg: >-
+        ocp primary key {{ __r_aws_primary_a.k8s_auth.api_key }}
+        ocp primary url {{ __r_aws_primary_a.k8s_auth.host }}
 
   - name: ocp key and url for secondary
     debug:
-      msg: "ocp secondary key {{ __r_aws_secondary_a.k8s_auth.api_key }}"
-      msg: "ocp secondary url {{ __r_aws_secondary_a.k8s_auth.host }}"
+      msg: >-
+        ocp secondary key {{ __r_aws_secondary_a.k8s_auth.api_key }}
+        ocp secondary url {{ __r_aws_secondary_a.k8s_auth.host }}
 
   - name: Submariner Setup
     vars:
@@ -346,13 +412,15 @@
 
   - name: ocp key and url for primary
     debug:
-      msg: "ocp primary key {{ __r_aws_primary_a.k8s_auth.api_key }}"
-      msg: "ocp primary url {{ __r_aws_primary_a.k8s_auth.host }}"
+      msg: >-
+        ocp primary key {{ __r_aws_primary_a.k8s_auth.api_key }}
+        ocp primary url {{ __r_aws_primary_a.k8s_auth.host }}
 
   - name: ocp key and url for secondary
     debug:
-      msg: "ocp secondary key {{ __r_aws_secondary_a.k8s_auth.api_key" 
-      msg: "ocp secondary url {{ __r_aws_secondary_a.k8s_auth.host }}"
+      msg: >-
+        ocp secondary key {{ __r_aws_secondary_a.k8s_auth.api_key }}
+        ocp secondary url {{ __r_aws_secondary_a.k8s_auth.host }}
 
   - name: ODF RDR Setup
     vars:
@@ -376,6 +444,75 @@
     - busybox-placement-rule.yaml.j2
     - busybox-placement-primary.yaml.j2
     - busybox-drpc.yaml.j2
+
+  # - name: Create bookbag for Regional Disaster Recovery
+  #   include_role: 
+  #     name: bookbag
+  #   vars:
+  #     bookbag_git_repo: "https://github.com/redhat-gpte-devopsautomation/bookbag-rdr.git"
+
+
+- name: Get argocd access details from hub
+  hosts: localhost
+  connection: local
+  become: false
+  gather_facts: false
+  tasks:
+  - name: Create exported variable dictionary for hub Cluster
+    ansible.builtin.set_fact:
+      __hub_cluster: "{{ __hub_cluster | d({}) | combine({ 'hub_cluster_' + item.key: item.value}) }}"
+    loop: "{{ aws_hub_a_provision_data | dict2items }}"
+
+  - name: Print User Access information
+    agnosticd_user_info:
+      data:
+        "{{ __hub_cluster }}"
+
+  - name: Create exported variable dictionary for Primary Cluster
+    ansible.builtin.set_fact:
+      __primary_cluster: "{{ __primary_cluster | d({}) | combine({ 'primary_cluster_' + item.key: item.value}) }}"
+    loop: "{{ aws_primary_a_provision_data | dict2items }}"
+
+  - name: Print User Access information
+    agnosticd_user_info:
+      data:
+        "{{ __primary_cluster }}"
+
+  - name: Create exported variable dictionary for secondary Cluster
+    ansible.builtin.set_fact:
+      __secondary_cluster: "{{ __secondary_cluster | d({}) | combine({ 'secondary_cluster_' + item.key: item.value}) }}"
+    loop: "{{ aws_secondary_a_provision_data | dict2items }}"
+
+  - name: Print User Access information
+    agnosticd_user_info:
+      data:
+        "{{ __secondary_cluster }}"
+
+
+- name: Step 005 Post Software - Cloud name
+  hosts: ohc_hub
+  become: true
+  gather_facts: false
+  tasks:
+  - name: Set Ansible Python interpreter to virtualenv
+    ansible.builtin.set_fact:
+      ansible_python_interpreter: "/opt/virtualenvs/k8s/bin/python"
+
+  - name: Copy authroized key
+    ansible.builtin.copy:
+      src: /home/ec2-user/.ssh/authorized_keys
+      dest: /root/.ssh/authorized_keys
+      remote_src: true
+      owner: root
+      group: root
+      mode: '0600'
+
+  - name: Setup showroom
+    ansible.builtin.include_role:
+      name: showroom
+    vars:
+      ansible_python_interpreter: /usr/libexec/platform-python
+
 
 - name: Step 005 Post Software - Report to Cloudforms
   hosts: localhost

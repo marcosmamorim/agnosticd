@@ -2,6 +2,7 @@
 :author1: Mitesh The Mouse <mitsharm@redhat.com>
 :author2: Prakhar Srivastava <psrivast@redhat.com>
 :author3: Tony Kay <tok@redhat.com>
+:author4: Eric Lavarde <elavarde@redhat.com>
 :team: GPTE DevOps & Automation
 
 
@@ -15,6 +16,15 @@ Requirements
 
 * To run the role one should have root privilege.
 * Port 80/tcp and 443/tcp should be open.
+* vscode extensions in a version fitting the code-server versions
+
+As this last point can be a bit daunting because https://marketplace.visualstudio.com/vscode offers only the 5 last versions, which might be too new for the current version of code-server.
+
+In such cases, install code-server first without plugins, then install the plugin(s) you need manually through the UI.
+Potentially, dependencies will also be installed.
+All those extensions will be cached under `~/.local/share/code-server/CachedExtensionVSIXs`.
+They will probably be named `publisher.extension-version-universal`.
+You need to grab those and rename them to `publisher.extension-version.vsix`, these are the files that can be installed with `code-server --install-extension xxx.vsix`.
 
 Role tree structure
 -------------------
@@ -22,20 +32,27 @@ Role tree structure
 [source=textinfo]
 ----
 vscode-server/
-├── README.adoc
 ├── defaults
 │   └── main.yml
 ├── files
-│   └── nginx.conf
+│   └── automationcontroller_nginx.conf
+├── README.adoc
 ├── tasks
 │   ├── main.yml
+│   ├── nginx
+│   │   ├── RedHat7.yml
+│   │   ├── RedHat8.yml
+│   │   └── RedHat9.yml
 │   ├── nginx-server.yml
 │   └── vscode-server.yml
-└── templates
-    ├── settings.json
-    └── vscode-server.service.j2
+├── templates
+│   ├── config.yaml.j2
+│   ├── nginx.conf.j2
+│   └── settings.json
+└── vars
+    └── main.yml
 
-4 directories, 8 files
+7 directories, 12 files
 ----
 
 Role Variables
@@ -53,7 +70,7 @@ Role Variables
 | vscode_server_install_nginx | Bool | Yes | True | To install custom nginx server to provide vscode server over http/https
 | vscode_server_install_vscode | Bool | Yes | True | To install / setup vscode-server
 | vscode_server_default_extensions | List | Yes | Yes | List of extension available on https://gpte-public.s3.amazonaws.com/vscode-plugins/
-| vscode_server_nginx_conf | String | Yes | Yes | nginx configuration file 
+| vscode_server_nginx_conf | String | Yes | Yes | nginx configuration file (as template) 
 | vscode_server_extension_urls | List | no| - | List of additional vscode extension extenal urls 
 |===
  

@@ -34,70 +34,34 @@
     status_code: 200
   loop: "{{ modules }}"
 
-- name: verify codeready pod is running
+- name: verify devspaces pod is running
   k8s_info:
     api_version: v1
     kind: Pod
-    namespace: codeready
+    namespace: openshift-operators
     label_selectors:
-      - app=codeready
-      - component=codeready
+      - app=devspaces
+      - component=devspaces
     field_selectors:
       - status.phase=Running
-  register: r_codeready_pod
+  register: r_devspaces_pod
   retries: 200
   delay: 10
-  until: r_codeready_pod.resources | list | length == 1
-
-- name: verify codeready is accessible
-  uri:
-    url: https://codeready-codeready.{{ route_subdomain }}/dashboard/
-    method: GET
-    status_code: 200
+  until: r_devspaces_pod.resources | list | length == 1
 
 - name: verify keycloak pod is running
   k8s_info:
     api_version: v1
     kind: Pod
-    namespace: rhsso
+    namespace: rhbk
     label_selectors:
       - app = keycloak
-      - component = keycloak
     field_selectors:
       - status.phase=Running
   register: r_keycloak_pod
   retries: 200
   delay: 10
   until: r_keycloak_pod.resources | list | length == 1
-
-- name: verify keycloak is accessible
-  uri:
-    url: https://keycloak-rhsso.{{ route_subdomain }}
-    method: GET
-    status_code: 200
-
-- name: Get SSO admin token
-  uri:
-    url: https://keycloak-rhsso.{{ route_subdomain }}/auth/realms/master/protocol/openid-connect/token
-    validate_certs: false
-    method: POST
-    body:
-      username: "{{workshop_rhsso_admin_user_name}}"
-      password: "{{workshop_rhsso_admin_password}}"
-      grant_type: "password"
-      client_id: "admin-cli"
-    body_format: form-urlencoded
-    status_code: 200,201,204
-  register: sso_admin_token
-
-- name: Verify custom realm exists
-  uri:
-    url: https://keycloak-rhsso.{{ route_subdomain }}/auth/admin/realms/quarkus
-    method: GET
-    headers:
-      Accept: application/json
-      Authorization: "Bearer {{ sso_admin_token.json.access_token }}"
-    status_code: 200
 
 - name: Verify Kafka CRD
   k8s_info:
@@ -144,12 +108,6 @@
   retries: 200
   delay: 10
   until: r_jaeger_operator_pod.resources | list | length == 1
-
-- name: verify user workspaces are started
-  include_tasks: confirm_che_workspace.yaml
-  vars:
-    user: "{{ item }}"
-  with_list: "{{ users }}"
 
 # Leave this as the last task in the playbook.
 - name: workload verification tasks complete

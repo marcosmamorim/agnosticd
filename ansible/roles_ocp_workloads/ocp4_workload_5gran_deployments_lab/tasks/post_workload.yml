@@ -45,7 +45,7 @@
 
 - name: Set fact for OCP Console Credentials
   ansible.builtin.set_fact:
-    console_credentials: "User: admin Password: admin"
+    console_credentials: "User: admin Password: {{ strong_admin_password }}"
 
 - name: Set fact for Gitea URL
   ansible.builtin.set_fact:
@@ -82,12 +82,23 @@
     - "OpenShift Hub Cluster Argo CD Instance is available at:"
     - "  https://{{ hub_argocd }}"
     - ""
+    - "Ansible Automation Platform Controller is available at:"
+    - "  {{ aap2_automationactrl_url }}"
+    - ""
+    - "  Credentials: User: student Password: {{ strong_dev_password }}"
+    - ""
     - "Gitea Git Server is available at:"
     - "  {{ gitea_endpoint }}"
     - ""
+    - "  Credentials: User: student Password: student"
+    - ""
     - "Don't forget to add the following line to your workstation's /etc/hosts for accessing the lab environment:"
     - "  {{ hosts_entry }}"
+    - ""
+    - ""
     - "  You can do something like this: $ echo {{ hosts_entry }} | sudo tee -a /etc/hosts"
+    - ""
+    - "Lab documentation: {{ lab_url }}"
     - ""
 - name: Save user data
   agnosticd_user_info:
@@ -96,6 +107,8 @@
       hub_ocp_console_credentials: "{{ console_credentials }}"
       hub_ocp_apiserver: "{{ hub_api_endpoint }}"
       hub_ocp_argocd: "https://{{ hub_argocd }}"
+      aap2_automationactrl_url: "{{ aap2_automationactrl_url }}"
+      aap2_credentials: "User: student Password: {{ strong_dev_password }}"
       gitea_endpoint: "{{ gitea_endpoint }}"
       hypervisor_ip: "{{ hypervisor_public_ip }}"
       hypervisor_user: "lab-user"

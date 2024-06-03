@@ -37,7 +37,6 @@ items:
     resources:
       requests:
         storage: 5Gi
-    storageClassName: gp2
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -232,9 +231,6 @@ items:
             successThreshold: 1
             timeoutSeconds: 1
           resources:
-            limits:
-              cpu: "2"
-              memory: 2Gi
             requests:
               cpu: 200m
               memory: 1Gi
@@ -311,4 +307,3 @@ items:
     resources:
       requests:
         storage: 5Gi
-    storageClassName: gp2
